@@ -6,64 +6,43 @@ import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
 
-# Page configuration
+# Page config
 st.set_page_config(
     page_title="Klasifikasi Smartphone",
     page_icon="📱",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
 # Custom CSS
 st.markdown("""
-    <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        padding: 1rem 0;
-    }
-    .sub-header {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #2c3e50;
-        margin-top: 1rem;
-    }
-    .prediction-card {
-        padding: 1.5rem;
-        border-radius: 1rem;
-        text-align: center;
-        color: white;
-        margin: 0.5rem 0;
-    }
-    .entry-level { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-    .mid-range { background: linear-gradient(135deg, #f39c12, #d68910); }
-    .high-end { background: linear-gradient(135deg, #3498db, #2980b9); }
-    .flagship { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
-    .gaming { background: linear-gradient(135deg, #e74c3c, #9b59b6); }
-    .daily-use { background: linear-gradient(135deg, #27ae60, #2ecc71); }
-    .photography { background: linear-gradient(135deg, #e67e22, #f39c12); }
-    .business { background: linear-gradient(135deg, #34495e, #2c3e50); }
-    .all-rounder { background: linear-gradient(135deg, #1abc9c, #16a085); }
-    .metric-box {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #667eea;
-        margin: 0.5rem 0;
-    }
-    </style>
+<style>
+.main-header {
+    font-size: 2.5rem;
+    font-weight: bold;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+}
+.prediction-card {
+    padding: 1.5rem;
+    border-radius: 1rem;
+    text-align: center;
+    color: white;
+    margin: 0.5rem 0;
+}
+.entry-level { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+.mid-range { background: linear-gradient(135deg, #f39c12, #d68910); }
+.high-end { background: linear-gradient(135deg, #3498db, #2980b9); }
+.flagship { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+</style>
 """, unsafe_allow_html=True)
 
-# Load models and artifacts
+# Load models
 @st.cache_resource
 def load_models():
-    """Load all models and artifacts"""
     try:
-        model_dir = Path(__file__).parent.parent / 'model'
+        model_dir = Path(__file__).resolve().parent.parent / 'model'
         
         price_model = joblib.load(model_dir / 'smartphone_price_model.pkl')
         usage_model = joblib.load(model_dir / 'smartphone_usage_model.pkl')
@@ -74,21 +53,18 @@ def load_models():
         
         return price_model, usage_model, scaler, features, usage_encoder, price_class_names
     except Exception as e:
-        st.error(f"Error loading models: {str(e)}")
+        st.error(f"Error loading models: {e}")
         return None, None, None, None, None, None
 
 @st.cache_data
 def load_data():
-    """Load dataset for visualization"""
     try:
-        data_path = Path(__file__).parent.parent / 'dataset' / 'smartphones.csv'
-        df = pd.read_csv(data_path)
-        return df
-    except Exception as e:
-        st.error(f"Error loading data: {str(e)}")
+        data_path = Path(__file__).resolve().parent.parent / 'dataset' / 'smartphones.csv'
+        return pd.read_csv(data_path)
+    except:
         return None
 
-# Load resources
+# Load
 price_model, usage_model, scaler, features, usage_encoder, price_class_names = load_models()
 df = load_data()
 
@@ -96,94 +72,94 @@ df = load_data()
 st.markdown('<h1 class="main-header">📱 Klasifikasi Kinerja Smartphone</h1>', unsafe_allow_html=True)
 st.markdown("---")
 
+# Check models
+if price_model is None:
+    st.error("⚠️ Gagal memuat model. Pastikan notebook sudah dijalankan untuk melatih model.")
+    st.info("Jalankan notebook `smartphone_performance_classification.ipynb` terlebih dahulu.")
+    st.stop()
+
 # Sidebar
 with st.sidebar:
-    st.image("https://img.icons8.com/color/96/000000/smartphone.png", width=80)
-    st.markdown("### 🎯 Tentang Aplikasi")
+    st.markdown("### 📊 Tentang Aplikasi")
     st.markdown("""
-    Aplikasi ini membantu mengklasifikasikan smartphone berdasarkan:
-    
-    **📊 Kelas Harga:**
+    **Klasifikasi Harga:**
     - Entry Level (< ₹10K)
     - Mid Range (₹10K-25K)
     - High End (₹25K-50K)
     - Flagship (> ₹50K)
     
-    **🎮 Jenis Penggunaan:**
-    - Gaming
-    - Daily Use
-    - Photography
-    - Business
-    - All-Rounder
+    **Jenis Penggunaan:**
+    - 🎮 Gaming
+    - 📱 Daily Use
+    - 📷 Photography
+    - 💼 Business
+    - ⚡ All-Rounder
     """)
 
-# Check if models loaded
-if price_model is None or usage_model is None:
-    st.error("⚠️ Gagal memuat model. Pastikan notebook sudah dijalankan untuk melatih model.")
-    st.info("Jalankan notebook `smartphone_performance_classification.ipynb` terlebih dahulu.")
-    st.stop()
-
 # Tabs
-tab1, tab2, tab3 = st.tabs(["🔮 Prediksi", "📊 Visualisasi Data", "ℹ️ Informasi Model"])
+tab1, tab2, tab3 = st.tabs(["🔮 Prediksi", "📊 Visualisasi", "ℹ️ Info Model"])
 
-# Tab 1: Prediction
 with tab1:
-    st.markdown('<p class="sub-header">Masukkan Spesifikasi Smartphone</p>', unsafe_allow_html=True)
+    st.subheader("Masukkan Spesifikasi Smartphone")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("**⚡ Processor**")
-        num_cores = st.slider("Jumlah Core", 4, 8, 8)
-        processor_speed = st.slider("Kecepatan (GHz)", 1.0, 3.5, 2.5, 0.1)
-        
-        st.markdown("**💾 Memory**")
+        st.markdown("**⚡ Processor & Memory**")
+        num_cores = st.slider("Cores", 4, 8, 8)
+        processor_speed = st.slider("Speed (GHz)", 1.0, 3.5, 2.5, 0.1)
         ram_capacity = st.slider("RAM (GB)", 2, 18, 8)
-        internal_memory = st.selectbox("Storage (GB)", [32, 64, 128, 256, 512, 1024], index=2)
+        internal_memory = st.selectbox("Storage (GB)", [32, 64, 128, 256, 512], index=2)
     
     with col2:
-        st.markdown("**🔋 Battery & Display**")
+        st.markdown("**🔋 Display & Battery**")
         battery_capacity = st.slider("Battery (mAh)", 2000, 7000, 5000, 100)
-        screen_size = st.slider("Ukuran Layar (inch)", 5.0, 8.0, 6.5, 0.1)
+        screen_size = st.slider("Screen (inch)", 5.0, 8.0, 6.5, 0.1)
         refresh_rate = st.selectbox("Refresh Rate (Hz)", [60, 90, 120, 144, 165], index=2)
-        
-        st.markdown("**📷 Camera**")
-        primary_camera_rear = st.slider("Kamera Belakang (MP)", 8, 200, 50)
-        primary_camera_front = st.slider("Kamera Depan (MP)", 5, 60, 16)
+        resolution_height = st.selectbox("Resolution Height", [1600, 2400, 3200], index=1)
+        resolution_width = st.selectbox("Resolution Width", [720, 1080, 1440], index=1)
     
     with col3:
-        st.markdown("**📐 Resolution**")
-        resolution_width = st.selectbox("Width (px)", [720, 1080, 1440], index=1)
-        resolution_height = st.selectbox("Height (px)", [1600, 2400, 3200], index=1)
-        
-        st.markdown("**✨ Features**")
+        st.markdown("**📷 Camera & Features**")
+        primary_camera_rear = st.slider("Rear Camera (MP)", 8, 200, 50)
+        primary_camera_front = st.slider("Front Camera (MP)", 5, 60, 16)
+        num_rear_cameras = st.slider("Rear Cameras", 1, 4, 3)
         has_5g = st.checkbox("5G Support", value=True)
         has_nfc = st.checkbox("NFC", value=True)
         fast_charging = st.checkbox("Fast Charging", value=True)
-        num_rear_cameras = st.slider("Jumlah Kamera Belakang", 1, 4, 3)
     
-    # Predict button
-    if st.button("🔍 Prediksi Klasifikasi", type="primary", use_container_width=True):
-        # Prepare input
-        input_data = pd.DataFrame({
-            'num_cores': [num_cores],
-            'processor_speed': [processor_speed],
-            'ram_capacity': [ram_capacity],
-            'internal_memory': [internal_memory],
-            'battery_capacity': [battery_capacity],
-            'screen_size': [screen_size],
-            'refresh_rate': [refresh_rate],
-            'primary_camera_rear': [primary_camera_rear],
-            'primary_camera_front': [primary_camera_front],
-            'resolution_width': [resolution_width],
-            'resolution_height': [resolution_height],
-            'has_5g': [int(has_5g)],
-            'has_nfc': [int(has_nfc)],
-            'fast_charging_available': [int(fast_charging)],
-            'num_rear_cameras': [num_rear_cameras]
-        })
+    if st.button("🔍 Prediksi", type="primary", use_container_width=True):
+        # Calculate derived features
+        total_pixels = resolution_width * resolution_height
+        camera_total = primary_camera_rear + primary_camera_front
+        perf_score = ram_capacity * processor_speed * num_cores
+        screen_ppi = total_pixels / (screen_size ** 2)
         
-        # Scale input
+        # Build input based on selected features
+        input_dict = {
+            'num_cores': num_cores,
+            'processor_speed': processor_speed,
+            'ram_capacity': ram_capacity,
+            'internal_memory': internal_memory,
+            'battery_capacity': battery_capacity,
+            'screen_size': screen_size,
+            'refresh_rate': refresh_rate,
+            'primary_camera_rear': primary_camera_rear,
+            'primary_camera_front': primary_camera_front,
+            'resolution_width': resolution_width,
+            'resolution_height': resolution_height,
+            'has_5g': int(has_5g),
+            'has_nfc': int(has_nfc),
+            'fast_charging_available': int(fast_charging),
+            'num_rear_cameras': num_rear_cameras,
+            'total_pixels': total_pixels,
+            'camera_total': camera_total,
+            'perf_score': perf_score,
+            'screen_ppi': screen_ppi
+        }
+        
+        # Select only the features used by model
+        input_data = pd.DataFrame([[input_dict.get(f, 0) for f in features]], columns=features)
         input_scaled = scaler.transform(input_data)
         
         # Predict
@@ -193,260 +169,163 @@ with tab1:
         usage_pred = usage_model.predict(input_scaled)[0]
         usage_proba = usage_model.predict_proba(input_scaled)[0]
         
-        price_class_name = price_class_names[price_pred]
-        usage_type_name = usage_encoder.classes_[usage_pred]
+        price_name = price_class_names[price_pred]
+        usage_name = usage_encoder.classes_[usage_pred]
         
-        # Display results
+        # Display
         st.markdown("---")
-        st.markdown('<p class="sub-header">📊 Hasil Prediksi</p>', unsafe_allow_html=True)
-        
-        col_result1, col_result2 = st.columns(2)
-        
-        with col_result1:
-            # Price class card
-            price_class_css = price_class_name.lower().replace(" ", "-")
-            st.markdown(f"""
-                <div class="prediction-card {price_class_css}">
-                    <h2 style="margin:0;">💰 {price_class_name}</h2>
-                    <p style="font-size: 1.2rem; margin-top: 0.5rem;">
-                        Confidence: {price_proba[price_pred]*100:.1f}%
-                    </p>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # Price probability chart
-            price_labels = [price_class_names[i] for i in range(4)]
-            fig_price = px.bar(
-                x=price_labels,
-                y=price_proba * 100,
-                color=price_proba,
-                color_continuous_scale='Blues',
-                labels={'x': 'Kelas', 'y': 'Probabilitas (%)'}
-            )
-            fig_price.update_layout(
-                title="Probabilitas Kelas Harga",
-                showlegend=False,
-                height=300
-            )
-            st.plotly_chart(fig_price, use_container_width=True)
-        
-        with col_result2:
-            # Usage type card
-            usage_css = usage_type_name.lower().replace(" ", "-").replace("-use", "")
-            st.markdown(f"""
-                <div class="prediction-card {usage_css}">
-                    <h2 style="margin:0;">🎯 {usage_type_name}</h2>
-                    <p style="font-size: 1.2rem; margin-top: 0.5rem;">
-                        Confidence: {usage_proba[usage_pred]*100:.1f}%
-                    </p>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # Usage probability chart
-            fig_usage = px.bar(
-                x=usage_encoder.classes_,
-                y=usage_proba * 100,
-                color=usage_proba,
-                color_continuous_scale='Greens',
-                labels={'x': 'Tipe', 'y': 'Probabilitas (%)'}
-            )
-            fig_usage.update_layout(
-                title="Probabilitas Jenis Penggunaan",
-                showlegend=False,
-                height=300
-            )
-            st.plotly_chart(fig_usage, use_container_width=True)
-        
-        # Interpretation
-        st.markdown("### 💡 Interpretasi")
-        
-        interpretations = {
-            'Entry Level': "📱 HP ini cocok untuk kebutuhan dasar seperti telepon, SMS, dan aplikasi ringan.",
-            'Mid Range': "📱 HP ini memiliki keseimbangan antara harga dan performa, cocok untuk pengguna umum.",
-            'High End': "📱 HP ini memiliki spesifikasi tinggi dengan harga yang masih terjangkau.",
-            'Flagship': "📱 HP ini adalah kelas premium dengan spesifikasi tertinggi di kelasnya."
-        }
-        
-        usage_interpretations = {
-            'Gaming': "🎮 HP ini optimal untuk mobile gaming dengan refresh rate tinggi dan prosesor kencang.",
-            'Daily Use': "📱 HP ini cocok untuk penggunaan sehari-hari dengan battery tahan lama.",
-            'Photography': "📷 HP ini cocok untuk fotografi dan content creation dengan kamera berkualitas.",
-            'Business': "💼 HP ini cocok untuk produktivitas dengan NFC dan storage besar.",
-            'All-Rounder': "⚡ HP ini bisa digunakan untuk berbagai keperluan dengan spesifikasi seimbang."
-        }
-        
-        st.info(f"**Kelas Harga:** {interpretations.get(price_class_name, '')}")
-        st.success(f"**Jenis Penggunaan:** {usage_interpretations.get(usage_type_name, '')}")
-        
-        # Combined result
-        st.markdown("### 🏆 Kesimpulan")
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 1.5rem; 
-                    border-radius: 1rem; color: white; text-align: center; font-size: 1.3rem;">
-            Smartphone ini termasuk kelas <b>{price_class_name}</b> dengan keunggulan untuk <b>{usage_type_name}</b>
-        </div>
-        """, unsafe_allow_html=True)
-
-# Tab 2: Visualization
-with tab2:
-    if df is not None:
-        st.markdown('<p class="sub-header">Eksplorasi Dataset Smartphone</p>', unsafe_allow_html=True)
+        st.subheader("📊 Hasil Prediksi")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            # Price distribution by brand
-            st.markdown("#### 📊 Distribusi Harga per Brand (Top 10)")
-            top_brands = df.groupby('brand_name')['price'].mean().sort_values(ascending=False).head(10)
-            fig_brand = px.bar(
-                x=top_brands.index,
-                y=top_brands.values,
-                color=top_brands.values,
-                color_continuous_scale='Viridis',
-                labels={'x': 'Brand', 'y': 'Rata-rata Harga (₹)'}
+            css_class = price_name.lower().replace(" ", "-")
+            st.markdown(f"""
+            <div class="prediction-card {css_class}">
+                <h2>💰 {price_name}</h2>
+                <p>Confidence: {price_proba[price_pred]*100:.1f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            fig1 = px.bar(
+                x=[price_class_names[i] for i in range(4)],
+                y=price_proba * 100,
+                color=price_proba,
+                color_continuous_scale='Blues'
             )
-            fig_brand.update_layout(showlegend=False, height=400)
-            st.plotly_chart(fig_brand, use_container_width=True)
+            fig1.update_layout(title="Probabilitas Kelas Harga", height=300, showlegend=False)
+            st.plotly_chart(fig1, use_container_width=True)
         
         with col2:
-            # Processor brand distribution
-            st.markdown("#### ⚙️ Distribusi Prosesor")
-            processor_counts = df['processor_brand'].value_counts()
-            fig_proc = px.pie(
-                values=processor_counts.values,
-                names=processor_counts.index,
-                color_discrete_sequence=px.colors.qualitative.Set3
+            st.markdown(f"""
+            <div class="prediction-card" style="background: linear-gradient(135deg, #1abc9c, #16a085);">
+                <h2>🎯 {usage_name}</h2>
+                <p>Confidence: {usage_proba[usage_pred]*100:.1f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            fig2 = px.bar(
+                x=usage_encoder.classes_,
+                y=usage_proba * 100,
+                color=usage_proba,
+                color_continuous_scale='Greens'
             )
-            fig_proc.update_layout(height=400)
-            st.plotly_chart(fig_proc, use_container_width=True)
+            fig2.update_layout(title="Probabilitas Jenis Penggunaan", height=300, showlegend=False)
+            st.plotly_chart(fig2, use_container_width=True)
         
-        # 3D Scatter Plot
-        st.markdown("#### 🔍 Visualisasi 3D: RAM vs Processor Speed vs Price")
+        # Summary
+        st.markdown("### 🏆 Kesimpulan")
+        st.success(f"Smartphone ini termasuk kelas **{price_name}** dengan keunggulan untuk **{usage_name}**")
         
-        # Create price class for coloring
-        df_viz = df.copy()
-        df_viz['price_class'] = pd.cut(df_viz['price'], 
-                                       bins=[0, 10000, 25000, 50000, float('inf')],
-                                       labels=['Entry Level', 'Mid Range', 'High End', 'Flagship'])
+        # Price Range Estimation
+        st.markdown("### 💰 Estimasi Rentang Harga")
+        price_ranges = {
+            'Entry Level': ('< ₹10,000', 'Rp 1.500.000 - Rp 3.000.000'),
+            'Mid Range': ('₹10,000 - ₹25,000', 'Rp 3.000.000 - Rp 7.000.000'),
+            'High End': ('₹25,000 - ₹50,000', 'Rp 7.000.000 - Rp 15.000.000'),
+            'Flagship': ('> ₹50,000', 'Rp 15.000.000 - Rp 30.000.000+')
+        }
         
-        fig_3d = px.scatter_3d(
-            df_viz.dropna(subset=['ram_capacity', 'processor_speed', 'price', 'price_class']),
-            x='ram_capacity',
-            y='processor_speed',
-            z='price',
-            color='price_class',
-            hover_data=['brand_name', 'model'],
-            labels={
-                'ram_capacity': 'RAM (GB)',
-                'processor_speed': 'Speed (GHz)',
-                'price': 'Price (₹)',
-                'price_class': 'Kelas'
+        india_range, idr_range = price_ranges.get(price_name, ('N/A', 'N/A'))
+        
+        col_price1, col_price2 = st.columns(2)
+        with col_price1:
+            st.info(f"🇮🇳 **India:** {india_range}")
+        with col_price2:
+            st.info(f"🇮🇩 **Indonesia:** {idr_range}")
+        
+        # Similar Smartphones Recommendation
+        st.markdown("### 📱 Rekomendasi Smartphone Serupa")
+        
+        if df is not None:
+            # Filter by price class - calculate price thresholds
+            price_thresholds = {
+                'Entry Level': (0, 10000),
+                'Mid Range': (10000, 25000),
+                'High End': (25000, 50000),
+                'Flagship': (50000, 999999)
             }
-        )
-        fig_3d.update_layout(height=600)
-        st.plotly_chart(fig_3d, use_container_width=True)
+            
+            min_price, max_price = price_thresholds.get(price_name, (0, 999999))
+            
+            # Filter phones in the same price class
+            similar_df = df[(df['price'] >= min_price) & (df['price'] <= max_price)].copy()
+            
+            if not similar_df.empty:
+                # Calculate similarity score based on specs
+                similar_df['spec_score'] = (
+                    abs(similar_df['ram_capacity'] - ram_capacity) * 2 +
+                    abs(similar_df['battery_capacity'] - battery_capacity) / 500 +
+                    abs(similar_df['primary_camera_rear'] - primary_camera_rear) / 10 +
+                    abs(similar_df['internal_memory'] - internal_memory) / 64
+                )
+                
+                # Get top 5 most similar phones
+                top_similar = similar_df.nsmallest(5, 'spec_score')[['brand_name', 'model', 'price', 'ram_capacity', 'battery_capacity', 'primary_camera_rear']]
+                
+                # Format price to IDR
+                def format_price(price_inr):
+                    idr = price_inr * 190  # Approximate conversion rate
+                    return f"Rp {idr:,.0f}".replace(',', '.')
+                
+                # Display as cards
+                for idx, phone in top_similar.iterrows():
+                    with st.container():
+                        col_a, col_b, col_c = st.columns([2, 2, 1])
+                        with col_a:
+                            st.markdown(f"**📱 {phone['brand_name'].title()} {phone['model']}**")
+                        with col_b:
+                            st.markdown(f"💵 ₹{phone['price']:,.0f} | {format_price(phone['price'])}")
+                        with col_c:
+                            st.markdown(f"RAM: {int(phone['ram_capacity'])}GB")
+            else:
+                st.info("Tidak ada smartphone serupa dalam dataset.")
+        else:
+            st.warning("Dataset tidak tersedia untuk rekomendasi.")
+
+with tab2:
+    if df is not None:
+        st.subheader("Eksplorasi Dataset")
         
-        # Box plots
-        st.markdown("#### 📈 Distribusi Fitur per Kelas Harga")
-        
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         
         with col1:
-            fig_box1 = px.box(df_viz, x='price_class', y='ram_capacity', 
-                             color='price_class', title="RAM per Kelas")
-            fig_box1.update_layout(showlegend=False, height=350)
-            st.plotly_chart(fig_box1, use_container_width=True)
+            st.markdown("#### Distribusi Harga per Brand (Top 10)")
+            top_brands = df.groupby('brand_name')['price'].mean().sort_values(ascending=False).head(10)
+            fig = px.bar(x=top_brands.index, y=top_brands.values, color=top_brands.values)
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            fig_box2 = px.box(df_viz, x='price_class', y='processor_speed', 
-                             color='price_class', title="Processor Speed per Kelas")
-            fig_box2.update_layout(showlegend=False, height=350)
-            st.plotly_chart(fig_box2, use_container_width=True)
+            st.markdown("#### Distribusi Prosesor")
+            proc = df['processor_brand'].value_counts()
+            fig = px.pie(values=proc.values, names=proc.index)
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
         
-        with col3:
-            fig_box3 = px.box(df_viz, x='price_class', y='refresh_rate', 
-                             color='price_class', title="Refresh Rate per Kelas")
-            fig_box3.update_layout(showlegend=False, height=350)
-            st.plotly_chart(fig_box3, use_container_width=True)
-        
-        # Dataset statistics
-        st.markdown("#### 📋 Statistik Dataset")
+        st.markdown("#### Dataset Statistics")
         st.dataframe(df.describe().round(2), use_container_width=True)
 
-# Tab 3: Model Info
 with tab3:
-    st.markdown('<p class="sub-header">Informasi Model</p>', unsafe_allow_html=True)
+    st.subheader("Informasi Model")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 🎯 Tujuan Model")
-        st.markdown("""
-        Model ini dirancang untuk membantu pengguna memahami klasifikasi smartphone berdasarkan:
-        
-        1. **Kelas Harga** - Menentukan segmen pasar HP
-        2. **Jenis Penggunaan** - Menentukan kecocokan penggunaan
-        
-        **Manfaat:**
-        - Membantu konsumen memilih HP sesuai kebutuhan
-        - Memberikan insight tentang spesifikasi yang mempengaruhi harga
-        - Klasifikasi otomatis berdasarkan machine learning
-        """)
-        
-        st.markdown("### 🔧 Algoritma")
+        st.markdown("### 🎯 Algoritma")
         st.markdown("""
         **Random Forest Classifier**
-        
-        Model ensemble yang menggunakan multiple decision trees untuk:
-        - Akurasi tinggi
-        - Mencegah overfitting
-        - Robust terhadap outliers
-        
-        **Anti-Overfitting Measures:**
-        - Cross-validation 5-fold
-        - Limited max_depth
-        - Minimum samples per leaf
-        - GridSearchCV optimization
+        - n_estimators: 200 trees
+        - max_depth: 8
+        - class_weight: balanced
         """)
     
     with col2:
-        st.markdown("### 📊 Fitur Input")
-        st.markdown("""
-        Model menggunakan **15 fitur** utama:
-        
-        | Kategori | Fitur |
-        |----------|-------|
-        | **Processor** | num_cores, processor_speed |
-        | **Memory** | ram_capacity, internal_memory |
-        | **Battery** | battery_capacity |
-        | **Display** | screen_size, refresh_rate, resolution |
-        | **Camera** | primary_camera_rear, primary_camera_front, num_rear_cameras |
-        | **Features** | has_5g, has_nfc, fast_charging |
-        """)
-        
-        st.markdown("### 📈 Dataset")
-        st.markdown("""
-        - **Sumber**: smartphones.csv
-        - **Jumlah Data**: ~981 smartphones
-        - **Brands**: 50+ brand berbeda
-        - **Price Range**: ₹3,499 - ₹650,000
-        """)
-    
-    st.markdown("---")
-    st.markdown("### 🎓 Cara Menggunakan")
-    st.markdown("""
-    1. Buka tab **Prediksi**
-    2. Masukkan spesifikasi smartphone yang ingin diklasifikasikan
-    3. Klik tombol **Prediksi Klasifikasi**
-    4. Lihat hasil prediksi kelas harga dan jenis penggunaan
-    5. Baca interpretasi untuk memahami hasil
-    """)
+        st.markdown("### 📊 Fitur")
+        st.markdown(f"**Total Fitur:** {len(features)}")
+        for i, f in enumerate(features, 1):
+            st.markdown(f"{i}. `{f}`")
 
 # Footer
 st.markdown("---")
-st.markdown("""
-    <div style="text-align: center; color: #7f8c8d; padding: 1rem;">
-        <p>📱 Klasifikasi Kinerja Smartphone | Powered by Random Forest</p>
-        <p>Dataset: Smartphones CSV | 981 Smartphones</p>
-    </div>
-""", unsafe_allow_html=True)
+st.markdown("<center>📱 Klasifikasi Kinerja Smartphone | Random Forest + Gradient Boosting</center>", unsafe_allow_html=True)
