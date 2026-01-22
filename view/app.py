@@ -273,7 +273,7 @@ with tab1:
                     with st.container():
                         col_a, col_b, col_c = st.columns([2, 2, 1])
                         with col_a:
-                            st.markdown(f"**📱 {phone['brand_name'].title()} {phone['model']}**")
+                            st.markdown(f"**📱 {phone['model']}**")
                         with col_b:
                             st.markdown(f"💵 ₹{phone['price']:,.0f} | {format_price(phone['price'])}")
                         with col_c:
